@@ -1,0 +1,5 @@
+./venv
+/.ipynb_checkpoints
+./viewer_interactions_val.db
+./viewer_interactions_test.db
+./viewer_interactions_train.db
