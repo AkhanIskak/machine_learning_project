@@ -310,7 +310,13 @@ All code is contained in a single notebook (`main.ipynb`) that can be run end-to
 
 ### Tools & Acknowledgments
 
-This project was developed using standard data science tools (Python, scikit-learn, pandas). ChatGPT was used as a supplementary tool to assist with formatting this README document and generating clear, meaningful code comments throughout the notebook.
+This project was developed using standard data science tools (Python, scikit-learn, pandas). ChatGPT was used as a supplementary assistant to help with:
+- Formatting this README document for better readability
+- Structuring the Jupyter notebook (`main.ipynb`) with clear markdown sections
+- Generating meaningful code comments and descriptive log outputs
+- Creating well-formatted console outputs and progress messages
+
+All core analysis, model development, and interpretation of results were performed by the team members.
 
 ---
 
