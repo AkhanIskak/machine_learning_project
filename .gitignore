@@ -8,3 +8,5 @@ viewer_interactions.db
 viewer_interactions_test.db
 viewer_interactions_train.db
 viewer_interactions_val.db
+Audience_Decode_EDA.ipynb
+Audience_Decode_ML.ipynb
