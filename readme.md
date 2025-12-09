@@ -1,6 +1,9 @@
 # Audience Decode
 
-**Team Members:** [Name1], [Name2], [Name3]
+**Team Members:**
+- **Bianca Maria Carla Marino** (321971) - Team Captain
+- **Iskak Akhan** (315271)
+- **Alessandro Torre** (309281)
 
 ---
 
