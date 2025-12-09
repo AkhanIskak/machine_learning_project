@@ -301,6 +301,11 @@ All code is contained in a single notebook (`main.ipynb`) that can be run end-to
 - Running the script multiple times will produce identical train/val/test splits
 - The split is purely random (no stratification by user or time)
 
+**Training Time:**
+- Training all models (with hyperparameter tuning) takes approximately **4000 seconds (~67 minutes)** on a MacBook M1 Pro
+- The most time-consuming parts are GridSearchCV for Random Forest and Gradient Boosting
+- Consider reducing `SAMPLE_SIZE` in the notebook if you need faster iterations during development
+
 ---
 
 *Project completed for Machine Learning course, Academic Year 25/26*
