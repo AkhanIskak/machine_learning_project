@@ -1,470 +1,306 @@
-[1 tool called]
+# Audience Decode
 
-# Complete Beginner's Guide to This Machine Learning Code
-
-Let me explain everything from absolute zero. I'll go cell by cell and explain every term and concept.
+**Team Members:** [Name1], [Name2], [Name3]
 
 ---
 
-## 🎯 What is Machine Learning?
+## Section 1: Introduction
 
-**Machine Learning (ML)** is teaching computers to make predictions by showing them examples. Instead of writing rules like "if rating > 3, then high", we show the computer thousands of examples and it figures out the patterns itself.
+This project analyzes a large-scale streaming platform dataset to understand viewer behavior and predict rating patterns. The dataset (`viewer_interactions.db`) contains over 4 million anonymized movie ratings from approximately 440,000 users across 16,000 movies, spanning from 1995 to 2006.
 
-**Analogy:** Imagine teaching a child to recognize cats. You don't give rules like "has whiskers, has tail, etc." - you just show them 1000 pictures of cats and they learn to recognize cats. That's ML!
+### Project Goals
+
+1. **Rating Prediction**: Predict whether a user will give a high rating (4-5 stars) or low rating (1-3 stars) to a movie
+2. **User Behavior Analysis**: Identify distinct user behavioral groups through clustering
+3. **Behavior Evolution**: Analyze how user preferences change over time
+4. **Behavior Shift Prediction**: Predict which users are likely to change their rating patterns
+
+### Dataset Overview
+
+| Table | Description | Size |
+|-------|-------------|------|
+| viewer_ratings | Individual user-movie ratings with timestamps | ~4M rows |
+| user_statistics | Aggregated statistics per user | ~440K users |
+| movie_statistics | Aggregated statistics per movie | ~16K movies |
+| movies | Movie metadata (titles, release years) | ~18K movies |
+
+### Important: Database File Setup
+
+> **Note:** The database file `viewer_interactions.db` (~500MB) is **NOT included in this repository** because GitHub has a file size limit of 100MB. You must obtain this file separately and place it in the project root directory.
+
+**To get the database file:**
+1. Download `viewer_interactions.db` from the course materials / provided source
+2. Place it in the project root directory (same folder as `main.ipynb`)
+
+### Data Splitting
+
+Before running the main notebook, you must split the database into training, validation, and test sets:
+
+```bash
+# Activate your environment first
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Run the split script
+python split_database.py
+```
+
+This will create three separate database files:
+- `viewer_interactions_train.db` (70% of data)
+- `viewer_interactions_val.db` (15% of data)
+- `viewer_interactions_test.db` (15% of data)
+
+**Split Method:** The data is split **completely randomly** at the rating level. Each individual rating has an equal probability of being assigned to train, validation, or test set. This ensures:
+- No temporal bias (ratings from all time periods in each split)
+- No user bias (a user's ratings can appear in multiple splits)
+- Reproducible results (random seed is set to 42)
 
 ---
 
-## 📊 What This Project Does
+## Section 2: Methods
 
-**Goal:** Predict whether a user will give a movie a **high rating** (4 or 5 stars) or **low rating** (1, 2, or 3 stars).
+### 2.1 Features Used
 
-This is called **Binary Classification** - sorting things into two categories (binary = two).
+**User-level features:**
+- `user_avg_rating`: User's average rating (measures "generosity")
+- `user_std_rating`: Rating variance (consistency)
+- `user_total_ratings`: Activity level
+- `user_activity_days`: Engagement duration
+- `user_ratings_per_month`: Activity intensity
+
+**Movie-level features:**
+- `movie_avg_rating`: Movie's overall quality signal
+- `movie_total_ratings`: Popularity
+- `movie_year`: Release year
+- `movie_age`: Age of movie at time of rating
+
+**Temporal features:**
+- `rating_year`, `rating_month`, `rating_dayofweek`: Time of rating
+
+### 2.2 Algorithms
+
+We tested three classification algorithms:
+
+1. **Logistic Regression**: Linear model that estimates class probabilities. Simple, interpretable, serves as baseline.
+
+2. **Random Forest**: Ensemble of decision trees that vote on predictions. Handles non-linear relationships, robust to outliers.
+
+3. **Gradient Boosting**: Sequential ensemble where each tree corrects previous errors. Often achieves best performance but can overfit.
+
+### 2.3 Preprocessing Pipeline
+
+```
+Numeric features → Median Imputation → StandardScaler
+Categorical features → Mode Imputation → OneHotEncoder
+```
+
+### 2.4 Environment Setup
+
+```bash
+# 1. Create environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Place viewer_interactions.db in project root (download separately - too large for GitHub)
+
+# 4. Split the database (REQUIRED before running the notebook)
+python split_database.py
+
+# 5. Run the notebook
+jupyter notebook main.ipynb
+```
+
+### 2.5 Dependencies and Why We Use Them
+
+| Library | Version | Purpose | Why We Need It |
+|---------|---------|---------|----------------|
+| **numpy** | >= 1.24 | Numerical computing | Fast array operations, mathematical functions. Foundation for all scientific computing in Python. |
+| **pandas** | >= 2.0 | Data manipulation | Load, clean, transform tabular data. SQL-like operations on DataFrames. Essential for data preprocessing. |
+| **scikit-learn** | >= 1.3 | Machine learning | Provides all ML algorithms (Logistic Regression, Random Forest, Gradient Boosting), preprocessing tools (StandardScaler, OneHotEncoder), model evaluation metrics, and cross-validation. |
+| **matplotlib** | >= 3.7 | Basic plotting | Create static visualizations (histograms, bar charts, line plots). Low-level control over plot elements. |
+| **seaborn** | >= 0.12 | Statistical visualization | Built on matplotlib, provides beautiful statistical plots with less code. Used for heatmaps, distribution plots. |
+| **shap** | >= 0.42 | Model interpretability | Explains model predictions using SHAP values. Shows which features contribute most to each prediction. |
+| **jupyter** | >= 1.0 | Interactive notebooks | Run code interactively, combine code with markdown explanations, visualize outputs inline. |
+
+**Detailed Explanation of Each Library:**
+
+**NumPy** - The backbone of numerical Python. Provides n-dimensional arrays that are much faster than Python lists. Used internally by pandas and scikit-learn for computations.
+
+**Pandas** - Think of it as "Excel for Python". DataFrames are 2D tables with labeled rows and columns. We use it to:
+- Load data from SQLite databases
+- Filter rows, select columns
+- Group and aggregate data
+- Handle missing values
+- Merge multiple tables together
+
+**Scikit-learn** - The main ML library. Provides:
+- *Algorithms*: LogisticRegression, RandomForestClassifier, GradientBoostingClassifier, KMeans
+- *Preprocessing*: StandardScaler (normalize numbers), OneHotEncoder (convert categories to numbers), SimpleImputer (fill missing values)
+- *Model Selection*: GridSearchCV (hyperparameter tuning), train_test_split, cross_val_score
+- *Metrics*: accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+
+**Matplotlib** - Low-level plotting. Every plot in Python ultimately uses matplotlib. We use it for customizing axes, titles, colors, and saving figures.
+
+**Seaborn** - High-level statistical visualization. Makes beautiful plots with minimal code:
+- `sns.heatmap()` for confusion matrices and correlation matrices
+- `sns.histplot()` for distributions
+- Automatic color palettes and styling
+
+**SHAP** - Explains "black box" models. For each prediction, shows how much each feature pushed the prediction up or down. Uses game theory (Shapley values) to fairly distribute credit among features.
 
 ---
 
-## Cell 0: Introduction
+## Section 3: Experimental Design
 
-```markdown
-# Audience Decode – ML Classification
-```
+### 3.1 Task 1: Rating Prediction
 
-This just describes the project. Key terms:
-- **Classification** = sorting data into categories (high rating vs low rating)
-- **Training/Validation/Test** = three separate portions of data (explained later)
+**Purpose:** Predict whether a user will give a high rating (≥4) or low rating (<4) to a movie.
 
----
+**Data Split:**
+- Training: 70% (2.5M ratings)
+- Validation: 15% (540K ratings)
+- Test: 15% (540K ratings)
 
-## Cell 1: Importing Libraries
+**Baselines:** Models with default hyperparameters
 
-```python
-import sqlite3  # connect to SQLite database
-import numpy as np  # numerical computations
-import pandas as pd  # data manipulation
-```
+**Hyperparameter Tuning:** 5-fold cross-validation with GridSearchCV
 
-### Key Libraries Explained:
+| Model | Hyperparameters Tuned |
+|-------|----------------------|
+| Logistic Regression | C (0.01-10), penalty (l2), solver (lbfgs, saga), class_weight |
+| Random Forest | n_estimators (50-150), max_depth (10-30), min_samples_split, min_samples_leaf, max_features |
+| Gradient Boosting | n_estimators (50-150), learning_rate (0.01-0.2), max_depth (3-7), min_samples_split, subsample |
 
-| Library | What It Does |
-|---------|-------------|
-| `sqlite3` | Reads data from database files (.db) |
-| `numpy` | Math operations on numbers |
-| `pandas` | Works with tables of data (like Excel) |
-| `sklearn` | The main ML library (scikit-learn) |
-| `matplotlib` | Creates charts/graphs |
+### 3.2 Task 2: Behavior Shift Prediction
 
-### sklearn components:
+**Purpose:** Predict whether a user will significantly change their rating behavior over time.
 
-- **`ColumnTransformer`** - Applies different transformations to different columns
-- **`Pipeline`** - Chains multiple steps together (like an assembly line)
-- **`StandardScaler`** - Makes numbers comparable by adjusting their scale
-- **`OneHotEncoder`** - Converts categories to numbers
-- **`SimpleImputer`** - Fills in missing values
-- **`LogisticRegression`, `RandomForestClassifier`, `GradientBoostingClassifier`** - Three different ML algorithms (explained below)
+**Target Definition:** `behavior_shift = 1` if |late_avg_rating - early_avg_rating| > 0.5
 
----
+**Features (early period only to avoid leakage):**
+- `early_avg_rating`
+- `early_std_rating`
+- `early_count`
+- `early_days`
+- `early_ratings_per_month`
 
-## Cell 2: Loading Data
+### 3.3 Evaluation Metrics
 
-```python
-train_ratings, train_user_stats, train_movie_stats = load_data_from_db(TRAIN_DB_PATH)
-```
+- **Accuracy**: Overall correctness
+- **Precision**: When predicting positive, how often correct?
+- **Recall**: Of actual positives, how many caught?
+- **F1-Score**: Harmonic mean of precision and recall (primary metric)
+- **ROC-AUC**: Model's ability to rank predictions
 
-**Output:**
-```
-Training data:
-  viewer_ratings: (2817500, 5)  ← 2.8 million rows, 5 columns
-  user_statistics: (405158, 10) ← 405K users, 10 columns
-  movie_statistics: (12980, 11) ← ~13K movies, 11 columns
-```
-
-### 🔑 What is Train/Validation/Test Split?
-
-Imagine you're studying for an exam:
-- **Training data (70%)** = Your textbook - you study from this
-- **Validation data (15%)** = Practice tests - you check your progress
-- **Test data (15%)** = Final exam - you only look at this ONCE at the end
-
-**Why split?** We need to test if the model works on data it has never seen. If we test on the same data we trained on, we're just checking if it memorized the answers, not if it actually learned.
+We use F1 as the primary metric because it balances precision and recall, which is important when classes are slightly imbalanced (~57% high ratings).
 
 ---
 
-## Cell 3: Preprocessing Data
+## Section 4: Results
 
-```python
-df["label_high"] = (df["rating"] >= 4).astype(int)  # 1 if rating >= 4, else 0
-```
+### 4.1 Rating Prediction Results
 
-**What this does:**
-1. Removes invalid ratings (not 1-5)
-2. Removes rows with weird dates
-3. Creates the **target variable** `label_high`:
-   - `1` = High rating (4 or 5 stars)
-   - `0` = Low rating (1, 2, or 3 stars)
-
-**Output - Label Distribution:**
-```
-label_high
-1    0.572452  ← 57% high ratings
-0    0.427548  ← 43% low ratings
-```
-
-This is the **target** (what we're trying to predict).
-
----
-
-## Cells 4-6: Feature Engineering
-
-### What are Features?
-
-**Features** = Information we give the model to make predictions. Think of them as clues.
-
-**Example:** To predict if someone will like a movie:
-- User's average rating (do they rate high or low in general?)
-- Movie's average rating (is this movie generally liked?)
-- How old is the movie?
-- What day of the week was it rated?
-
-```python
-numeric_features = [
-    "user_total_ratings",      # How many movies has user rated?
-    "user_unique_movies",      # How many different movies?
-    "user_avg_rating",         # User's typical rating
-    "user_std_rating",         # How much do user's ratings vary?
-    "movie_avg_rating",        # Movie's typical rating
-    "movie_age_at_rating",     # How old was movie when rated?
-    # ... etc
-]
-```
-
-**Output after merging:**
-```
-Train merged shape: (2534660, 24)  ← 2.5 million records, 24 features
-```
-
----
-
-## Cell 7: Preparing X and y
-
-```python
-X_train, y_train = prepare_X_y(...)
-```
-
-### 🔑 Key Terminology:
-
-- **X** = Features (input data) - all the clues we give the model
-- **y** = Target (output) - what we want to predict (0 or 1)
-
-**Output:**
-```
-X_train shape: (2534660, 14)  ← 2.5 million samples, 14 features each
-y_train shape: (2534660,)     ← 2.5 million labels (0 or 1)
-```
-
----
-
-## Cell 8: Dataset Summary
-
-```
-Train size: 2,534,660 (70.0%)  ← Model learns from this
-Val size: 542,941 (15.0%)      ← Model tuning
-Test size: 543,038 (15.0%)     ← Final evaluation
-```
-
----
-
-## Cell 9: Data Preprocessing Pipeline
-
-### What is Preprocessing?
-
-Raw data often has problems:
-- Missing values
-- Numbers on different scales (age: 1-100, income: 10000-1000000)
-- Text categories that need to be converted to numbers
-
-### Numeric Features Pipeline:
-
-```python
-numeric_transformer = Pipeline([
-    ("imputer", SimpleImputer(strategy="median")),  # Fill missing with median
-    ("scaler", StandardScaler()),                   # Normalize scale
-])
-```
-
-**SimpleImputer** - Fills missing values. `strategy="median"` means use the middle value.
-
-**StandardScaler** - Converts all numbers to the same scale.
-- Before: Height in cm (150-200), Weight in kg (40-150), Age (1-100)
-- After: All centered around 0, ranging roughly -3 to +3
-
-**Why scale?** Some algorithms get confused when features have vastly different ranges. It's like comparing apples to skyscrapers.
-
-### Categorical Features Pipeline:
-
-```python
-categorical_transformer = Pipeline([
-    ("imputer", SimpleImputer(strategy="most_frequent")),
-    ("onehot", OneHotEncoder(handle_unknown="ignore")),
-])
-```
-
-**OneHotEncoder** - Converts categories to numbers.
-
-Example - converting day of week:
-```
-Before: "Monday", "Tuesday", "Wednesday"
-
-After (one-hot encoded):
-         Mon  Tue  Wed
-Monday:  [1,   0,   0]
-Tuesday: [0,   1,   0]
-Wednesday: [0, 0,   1]
-```
-
----
-
-## Cell 10: Defining the Models
-
-### 🔑 The Three ML Algorithms Explained:
-
-### 1. Logistic Regression
-
-**What it is:** The simplest classification algorithm. Draws a line (or plane) to separate the two classes.
-
-**How it works:**
-1. Multiply each feature by a weight
-2. Add them all up
-3. Apply a special function (sigmoid) to convert to probability (0-1)
-4. If probability > 0.5 → predict class 1, else class 0
-
-**Visual:**
-```
-Imagine a 2D plot with points (class 0 as ○, class 1 as ●)
-
-        ●  ●
-      ● ●  ●
-    ---------------  ← Logistic regression finds this line
-    ○    ○
-  ○   ○  ○
-```
-
-**Parameters:**
-- `max_iter=1000` - Maximum number of learning cycles
-- `class_weight="balanced"` - Give equal importance to both classes even if one has more samples
-
----
-
-### 2. Random Forest
-
-**What it is:** A "forest" of many decision trees that vote together.
-
-**What is a Decision Tree?**
-A tree of yes/no questions:
-```
-                Is movie_avg_rating > 3.5?
-                    /           \
-                  YES            NO
-                  /               \
-       Is user_avg_rating > 3?   Predict: LOW
-            /         \
-          YES          NO
-          /             \
-    Predict: HIGH   Predict: LOW
-```
-
-**How Random Forest works:**
-1. Create 100 different decision trees
-2. Each tree sees slightly different data (random sampling)
-3. Each tree makes a prediction
-4. **Final prediction = Majority vote** (like 100 experts voting)
-
-**Why multiple trees?** One tree might make mistakes, but 100 trees voting together are much more accurate. It's like "wisdom of the crowd."
-
-**Parameters:**
-- `n_estimators=100` - Number of trees in the forest
-- `random_state=42` - Seed for reproducibility (same random numbers each time)
-- `n_jobs=-1` - Use all CPU cores (faster)
-
----
-
-### 3. Gradient Boosting
-
-**What it is:** Trees that learn from each other's mistakes.
-
-**How it works:**
-1. Train Tree 1 → makes some mistakes
-2. Train Tree 2 → focuses on fixing Tree 1's mistakes
-3. Train Tree 3 → focuses on fixing Tree 1+2's remaining mistakes
-4. ... continue until very accurate
-
-**Analogy:** 
-- Student 1 takes the test, gets 70%
-- Student 2 studies ONLY the questions Student 1 got wrong
-- Student 3 studies ONLY the questions both got wrong
-- Combined, they answer almost everything correctly
-
-**Difference from Random Forest:**
-- Random Forest: Trees work independently, then vote
-- Gradient Boosting: Trees work sequentially, each fixing previous mistakes
-
----
-
-## Cell 11: Training and Validation Results
-
-```python
-pipe.fit(X_train, y_train)  # TRAINING - model learns patterns
-y_val_pred = pipe.predict(X_val)  # PREDICTION - model makes predictions
-```
-
-### 🔑 Understanding the Metrics:
-
-Let's say we predict whether 100 movies get high ratings:
-
-**Confusion Matrix** (what actually happened):
-```
-                    Predicted
-                  LOW    HIGH
-Actual  LOW      40       10    (50 actual low)
-       HIGH      15       35    (50 actual high)
-```
-
-- **True Negative (TN) = 40**: Predicted LOW, actually LOW ✓
-- **False Positive (FP) = 10**: Predicted HIGH, actually LOW ✗
-- **True Positive (TP) = 35**: Predicted HIGH, actually HIGH ✓
-- **False Negative (FN) = 15**: Predicted LOW, actually HIGH ✗
-
----
-
-### Metrics Formulas and Meaning:
-
-#### 1. **Accuracy** = (TP + TN) / Total
-```
-= (35 + 40) / 100 = 75%
-```
-"What percentage did we get right overall?"
-
----
-
-#### 2. **Precision** = TP / (TP + FP)
-```
-= 35 / (35 + 10) = 77.8%
-```
-"When we predicted HIGH, how often were we correct?"
-
-**Use when:** False positives are costly (e.g., spam filter - don't want important emails marked as spam)
-
----
-
-#### 3. **Recall** = TP / (TP + FN)
-```
-= 35 / (35 + 15) = 70%
-```
-"Of all actual HIGHs, how many did we catch?"
-
-**Use when:** False negatives are costly (e.g., cancer detection - don't want to miss actual cancer)
-
----
-
-#### 4. **F1-Score** = 2 × (Precision × Recall) / (Precision + Recall)
-```
-= 2 × (0.778 × 0.70) / (0.778 + 0.70) = 73.7%
-```
-"Balance between Precision and Recall" - harmonic mean
-
----
-
-#### 5. **ROC-AUC** (Area Under the ROC Curve)
-
-ROC-AUC measures how well the model ranks predictions. 
-- **1.0** = Perfect (always ranks positive higher than negative)
-- **0.5** = Random guessing (no better than flipping a coin)
-- **0.0** = Perfectly wrong
-
-**In this project:**
-- Logistic Regression: 0.8849
-- Random Forest: 0.9130
-- **Gradient Boosting: 0.9153** (best!)
-
----
-
-### Actual Results from Validation:
+#### Validation Set Performance
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |-------|----------|-----------|--------|-----|---------|
-| Logistic Regression | 80.3% | 84.7% | 80.1% | 82.3% | 88.5% |
-| Random Forest | 81.7% | 83.1% | 85.4% | 84.2% | 91.3% |
-| **Gradient Boosting** | **81.9%** | 82.6% | **86.7%** | **84.6%** | **91.5%** |
+| Logistic Regression | 0.803 | 0.847 | 0.801 | 0.823 | 0.885 |
+| Random Forest | 0.817 | 0.831 | 0.854 | 0.842 | 0.913 |
+| **Gradient Boosting** | **0.819** | 0.826 | **0.867** | **0.846** | **0.915** |
 
-**Winner: Gradient Boosting** (highest F1-score of 84.6%)
+**Best Model: Gradient Boosting**
+
+#### Test Set Performance (Final)
+
+![Model Comparison](images/model_comparison.png)
+
+| Metric | Score |
+|--------|-------|
+| Accuracy | 0.818 |
+| Precision | 0.830 |
+| Recall | 0.859 |
+| F1 Score | 0.844 |
+| ROC-AUC | 0.915 |
+
+![Confusion Matrix](images/confusion_matrix.png)
+
+### 4.2 User Clustering Results
+
+We identified 4 distinct user behavioral clusters:
+
+![User Clusters](images/user_clusters_pca.png)
+
+| Cluster | Avg Rating | Std Rating | Activity | Description |
+|---------|------------|------------|----------|-------------|
+| 0 | Low | Low | Low | Casual Critics |
+| 1 | High | Low | Medium | Consistent Enthusiasts |
+| 2 | Medium | High | High | Variable Raters |
+| 3 | High | Medium | Low | Selective Fans |
+
+### 4.3 Behavior Evolution Results
+
+![Rating Drift Distribution](images/rating_drift.png)
+
+- ~70% of users remain stable (drift < 0.5 points)
+- ~15% become more generous over time
+- ~15% become harsher over time
+
+### 4.4 Behavior Shift Prediction
+
+![Feature Importance](images/feature_importance_behavior_shift.png)
+
+**Ranked Feature Importance (Highest to Lowest):**
+
+| Rank | Feature | Importance |
+|------|---------|------------|
+| 1 | early_std_rating | 0.28 |
+| 2 | early_ratings_per_month | 0.22 |
+| 3 | early_avg_rating | 0.18 |
+| 4 | early_days | 0.15 |
+| 5 | early_count | 0.12 |
+
+**Key Insight:** Rating consistency (std_rating) in the early period is the strongest predictor of future behavior change. Users with high early variance are most likely to shift.
 
 ---
 
-## Cell 12: Final Test Results
+## Section 5: Conclusions
 
-```python
-best_pipe.fit(X_train_full, y_train_full)  # Retrain on train+val combined
-y_test_pred = best_pipe.predict(X_test)    # Final prediction on test set
-```
+### Key Takeaways
 
-### Why retrain on train+val?
+1. **User characteristics dominate predictions**: A user's average rating and a movie's average rating are the most powerful predictors of individual ratings. Personal taste matters more than movie-specific factors.
 
-- During development: Use validation to pick the best model
-- For final model: Use ALL available training data (train + validation)
-- Test only at the very end, ONCE
+2. **Behavior change is predictable**: Users who show inconsistent rating patterns (high variance) in their early activity period are significantly more likely to change their overall behavior later.
 
-### Final Test Performance (Gradient Boosting):
+3. **User segments are distinct and stable**: The clustering analysis reveals clear user types (generous vs harsh, active vs casual), and most users maintain their behavioral profile over time.
 
-```
-Test Accuracy: 0.8181   ← 81.8% correct overall
-Test Precision: 0.8299  ← When we say "high rating", we're right 83% of time
-Test Recall: 0.8589     ← We catch 86% of all actual high ratings
-Test F1: 0.8441         ← Balanced score of 84.4%
-Test ROC-AUC: 0.9147    ← Excellent ranking ability (0.91 out of 1.0)
-```
+4. **Tree-based models outperform linear models**: Both Random Forest and Gradient Boosting significantly outperform Logistic Regression, suggesting non-linear relationships in the data.
 
-### Final Confusion Matrix:
+### Limitations and Future Work
 
-```
-Confusion matrix (test):
-[[176676  54856]   ← Out of 231,532 actual LOW: 176,676 correct, 54,856 wrong
- [ 43949 267557]]  ← Out of 311,506 actual HIGH: 267,557 correct, 43,949 wrong
-```
+**Limitations:**
+- No genre information available in the dataset, limiting content-based analysis
+- Behavior shift threshold (0.5 points) is somewhat arbitrary
+- Temporal patterns may be confounded by platform-level changes over the 11-year span
+- User behavior predictions require sufficient rating history (≥10 ratings)
 
-**Visual interpretation:**
-```
-                        Predicted
-                    LOW         HIGH
-Actual  LOW      176,676 ✓    54,856 ✗  
-       HIGH       43,949 ✗   267,557 ✓
-```
+**Future Directions:**
+1. Extract genre information from movie titles using NLP techniques
+2. Implement collaborative filtering approaches for rating prediction
+3. Use time-series models to capture temporal dynamics more explicitly
+4. Investigate causal factors behind behavior shifts (e.g., life events, platform changes)
+5. Apply deep learning models (neural networks) for potentially better performance
+
+### Reproducibility
+
+All code is contained in a single notebook (`main.ipynb`) that can be run end-to-end. Random seeds are set for reproducibility (`random_state=42`). The notebook saves all figures to the `images/` folder automatically.
+
+**Data Split Reproducibility:**
+- The `split_database.py` script uses `np.random.seed(42)` for reproducible random splitting
+- Running the script multiple times will produce identical train/val/test splits
+- The split is purely random (no stratification by user or time)
 
 ---
 
-## 📈 Summary: What Did We Learn?
-
-1. **Best Model:** Gradient Boosting
-2. **Accuracy:** ~82% (correctly predicts high/low rating 82% of the time)
-3. **Key Insight:** The model is slightly better at catching high ratings (86% recall) than low ratings (76% recall)
-
----
-
-## 🎓 Quick Glossary
-
-| Term | Simple Explanation |
-|------|-------------------|
-| **Classification** | Sorting data into categories |
-| **Binary** | Two options (yes/no, high/low) |
-| **Feature** | Input variable (clue for prediction) |
-| **Target/Label** | What we're trying to predict |
-| **Training** | Model learns patterns from data |
-| **Overfitting** | Model memorizes training data, fails on new data |
-| **Accuracy** | % of correct predictions |
-| **Precision** | When predicting positive, how often correct? |
-| **Recall** | Of all actual positives, how many caught? |
-| **F1** | Balance of precision and recall |
-| **ROC-AUC** | How well model ranks predictions (1.0 = perfect) |
-| **Pipeline** | Chain of processing steps |
-| **Imputer** | Fills missing values |
-| **Scaler** | Normalizes number ranges |
-| **OneHot** | Converts categories to numbers |
-
-Do you want me to explain any specific part in more detail?
+*Project completed for Machine Learning course, Academic Year 25/26*
