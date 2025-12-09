@@ -29,7 +29,7 @@ This project analyzes a large-scale streaming platform dataset to understand vie
 
 ### Important: Database File Setup
 
-> **Note:** The database file `viewer_interactions.db` (~500MB) is **NOT included in this repository** because GitHub has a file size limit of 100MB. You must obtain this file separately and place it in the project root directory.
+> **Note:** The database file `viewer_interactions.db` (~130mb) is **NOT included in this repository** because GitHub has a file size limit of 100MB. You must obtain this file separately and place it in the project root directory.
 
 **To get the database file:**
 1. Download `viewer_interactions.db` from the course materials / provided source
