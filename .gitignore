@@ -3,3 +3,8 @@
 ./viewer_interactions_val.db
 ./viewer_interactions_test.db
 ./viewer_interactions_train.db
+TECHNICAL_GUIDE.md
+viewer_interactions.db
+viewer_interactions_test.db
+viewer_interactions_train.db
+viewer_interactions_val.db
